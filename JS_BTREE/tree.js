@@ -5,15 +5,10 @@
 //  - each array element represent a tree node
 //  - each tree node have B+1 childs
 
-// TODO: actually we assume to manage numbers keys (future generic object implementation)
 var BTREE = function(B) {
 
     // number of node keys
     var b = B;
-    // implicit tree representation
-    var result = [];
-    // input ref (Array)
-    var input = null;
 
     // move to the index of the first child of the destination node (parent)
     var firstChild = function(i) {
@@ -21,17 +16,15 @@ var BTREE = function(B) {
     };
 
     // return the tree height
-    var height = function() {
-
-        if (input === null) {
+    var height = function(arr) {
+        if (arr === null) {
             return 0;
         }
         var j=0, h=0;
-        while (j < input.length) {
+        while (j < arr.length) {
             j = j + Math.pow(B+1, h)*B;
             h++;
         }
-
         return h;
     };
 
@@ -51,17 +44,12 @@ var BTREE = function(B) {
         child: function(i, k) {
             return i*b+i+k;
         },
-        // store and return a new array that is a btree implicit representation of the input array
-        // warning: the array is a shallow copy, this securely work for primitive type (actually we support only numbers keys)
+        // source array MUST be ascending ordered !!!
+        // transforme the source array in an array that is a btree implicit representation
         build: function(source) {
-            // make a shallow copy
-            input = source.slice();
-            // sort
-            input.sort(function(a,b){
-                return a-b;
-            });
+            var result = [];
             // necessary tree height
-            var h = height();
+            var h = height(source);
             // array levels starting indices (from 0 to h-1)
             var indices = [];
             for (var i=0; i<h; i++) {
@@ -69,17 +57,17 @@ var BTREE = function(B) {
             }
 
             var inputIndex = 0, currentLevel = h-1;
-            while (inputIndex < input.length) {
+            while (inputIndex < source.length) {
 
                 // make leaf node
-                var leaf = input.slice(inputIndex, inputIndex+B);
+                var leaf = source.slice(inputIndex, inputIndex+B);
                 // add to result array (tree)
                 var leafIndex = indices[currentLevel];
                 result[leafIndex] = leaf;
-                // move the input pointer
+                // move the source pointer
                 inputIndex = inputIndex + B;
                 // check if we have others keys
-                if (inputIndex > input.length-1) {
+                if (inputIndex > source.length-1) {
                     // special case (parent not exist) we cannot made it we have no more keys
                     if (typeof(result[this.parent(leafIndex)]) === 'undefined') {
                         // the leaf is moved to the parent index
@@ -102,12 +90,12 @@ var BTREE = function(B) {
                     // check if exist, is full or have space to another keys
                     if (typeof(node) === 'undefined') {
                         // create parent node
-                        result[indices[currentLevel]] = [input[inputIndex]];
+                        result[indices[currentLevel]] = [source[inputIndex]];
                         inputIndex++;
                         found = true;
                     } else if (node.length < B) {
                         // push new keys inside parent
-                        node.push(input[inputIndex]);
+                        node.push(source[inputIndex]);
                         inputIndex++;
                         found = true;
                     } else if (node.length === B) {
@@ -133,6 +121,8 @@ var BTREE = function(B) {
 
 // EXAMPLE
 var tree = BTREE(3);
-var input = [1,3,4,5,6,9,10,2,7,8,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
-var arr = tree.build(input)
+var source = [1,3,4,5,6,9,10,2,7,8,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+var arr = tree.build(source.sort(function(a,b){
+    return a-b;
+}))
 console.log(JSON.stringify(arr));
